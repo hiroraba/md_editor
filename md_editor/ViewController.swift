@@ -43,7 +43,7 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         textView.textContainer?.widthTracksTextView = true
         
         let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineSpacing = 10  // Adjusted to match ruler spacing
+        paragraphStyle.lineSpacing = 6  // Adjusted to match ruler spacing
         textView.defaultParagraphStyle = paragraphStyle
         textView.typingAttributes[.paragraphStyle] = paragraphStyle
         
@@ -53,7 +53,6 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
 
         let lineNumberRulerView = LineNumberRulerView(textView: textView)
         leftScrollView.verticalRulerView = lineNumberRulerView
-        lineNumberRulerView.needsDisplay = true
 
         webView.frame = NSRect(x: 0, y: 0, width: 500, height: 600)
         webView.autoresizingMask = [.width, .height]
