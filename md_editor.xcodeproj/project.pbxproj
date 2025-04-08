@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		693E10142DA4EE1800839F1E /* RealmSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 693E10132DA4EE1800839F1E /* RealmSwift */; };
 		69B5740E2DA395D90041194B /* Ink in Frameworks */ = {isa = PBXBuildFile; productRef = 69B5740D2DA395D90041194B /* Ink */; };
 		69B574122DA396D60041194B /* RxBlocking in Frameworks */ = {isa = PBXBuildFile; productRef = 69B574112DA396D60041194B /* RxBlocking */; };
 		69B574142DA396D60041194B /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = 69B574132DA396D60041194B /* RxCocoa */; };
@@ -29,6 +30,19 @@
 			remoteInfo = md_editor;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		693E10732DA5062B00839F1E /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		69B573DE2DA395B20041194B /* md_editor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = md_editor.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -62,6 +76,7 @@
 				69B574142DA396D60041194B /* RxCocoa in Frameworks */,
 				69B5740E2DA395D90041194B /* Ink in Frameworks */,
 				69B574162DA396D60041194B /* RxRelay in Frameworks */,
+				693E10142DA4EE1800839F1E /* RealmSwift in Frameworks */,
 				69B574122DA396D60041194B /* RxBlocking in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -83,12 +98,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		693E106F2DA5062B00839F1E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		69B573D52DA395B20041194B = {
 			isa = PBXGroup;
 			children = (
 				69B573E02DA395B20041194B /* md_editor */,
 				69B573F22DA395B30041194B /* md_editorTests */,
 				69B573FC2DA395B30041194B /* md_editorUITests */,
+				693E106F2DA5062B00839F1E /* Frameworks */,
 				69B573DF2DA395B20041194B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -113,6 +136,7 @@
 				69B573DA2DA395B20041194B /* Sources */,
 				69B573DB2DA395B20041194B /* Frameworks */,
 				69B573DC2DA395B20041194B /* Resources */,
+				693E10732DA5062B00839F1E /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -128,6 +152,7 @@
 				69B574112DA396D60041194B /* RxBlocking */,
 				69B574132DA396D60041194B /* RxCocoa */,
 				69B574152DA396D60041194B /* RxRelay */,
+				693E10132DA4EE1800839F1E /* RealmSwift */,
 			);
 			productName = md_editor;
 			productReference = 69B573DE2DA395B20041194B /* md_editor.app */;
@@ -215,6 +240,7 @@
 				69B5740C2DA395D90041194B /* XCRemoteSwiftPackageReference "Ink" */,
 				69B5740F2DA396590041194B /* XCRemoteSwiftPackageReference "SwiftLint" */,
 				69B574102DA396D60041194B /* XCRemoteSwiftPackageReference "RxSwift" */,
+				693E10122DA4EE1800839F1E /* XCRemoteSwiftPackageReference "realm-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 69B573DF2DA395B20041194B /* Products */;
@@ -434,7 +460,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.0.1;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "matsuohiroki.md-editor";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -464,7 +490,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.0.1;
+				MARKETING_VERSION = 0.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "matsuohiroki.md-editor";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -584,6 +610,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		693E10122DA4EE1800839F1E /* XCRemoteSwiftPackageReference "realm-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/realm/realm-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.54.3;
+			};
+		};
 		69B5740C2DA395D90041194B /* XCRemoteSwiftPackageReference "Ink" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/JohnSundell/Ink.git";
@@ -611,6 +645,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		693E10132DA4EE1800839F1E /* RealmSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 693E10122DA4EE1800839F1E /* XCRemoteSwiftPackageReference "realm-swift" */;
+			productName = RealmSwift;
+		};
 		69B5740D2DA395D90041194B /* Ink */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 69B5740C2DA395D90041194B /* XCRemoteSwiftPackageReference "Ink" */;

@@ -18,6 +18,11 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
     private let viewModel = EditorViewModel()
     private let disposeBag = DisposeBag()
     
+    private let listViewModel = MarkdownDocumentListViewModel()
+    private let tableView = DocumentListTableView()
+    private let searchField = NSSearchField()
+    private var selectedDocument: Document? = nil
+    
     override func loadView() {
         let splitView = NSSplitView()
         splitView.isVertical = true
@@ -80,11 +85,39 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         let initialPosition = splitView.frame.width * 0.5
         splitView.setPosition(initialPosition, ofDividerAt: 0)
         
+        let documentTableView = NSScrollView()
+        documentTableView.hasVerticalScroller = true
+        documentTableView.hasHorizontalScroller = false
+        documentTableView.borderType = .bezelBorder
+        documentTableView.translatesAutoresizingMaskIntoConstraints = false
+        
+        searchField.placeholderString = "Search Documents"
+        searchField.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        
+        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("TitleColumn"))
+        column.title = "Documents"
+        tableView.addTableColumn(column)
+        tableView.headerView = nil
+        tableView.usesAlternatingRowBackgroundColors = true
+        documentTableView.documentView = tableView
+        
+        let sideBarStack = NSStackView(views: [searchField, documentTableView])
+        sideBarStack.orientation = .vertical
+        sideBarStack.translatesAutoresizingMaskIntoConstraints = false
+        sideBarStack.spacing = 8
+        sideBarStack.widthAnchor.constraint(equalToConstant: 200).isActive = true
+        
+        splitView.insertArrangedSubview(sideBarStack, at: 0)
+        
         self.view = splitView
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.deletionDelegate = self
         
         NotificationCenter.default.rx.notification(
             NSText.didChangeNotification,
@@ -93,6 +126,12 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
             return self?.textView.string
         }.bind(to: viewModel.markDownText)
             .disposed(by: disposeBag)
+        
+        viewModel.markDownText.observe(on: MainScheduler.instance).subscribe(onNext: { [weak self] text in
+            guard let self = self else { return }
+            guard let selectedDocument = self.selectedDocument else { return }
+            listViewModel.updateDocumentContent(document: selectedDocument, newContent: text)
+        }).disposed(by: disposeBag)
         
         viewModel.htmlText
             .observe(on: MainScheduler.instance)
@@ -115,9 +154,26 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         NotificationCenter.default.rx
             .notification(NSText.didChangeNotification, object: textView)
             .subscribe(onNext: { [weak self] _ in
-                (self?.textView.enclosingScrollView?.verticalRulerView as? LineNumberRulerView)?.needsDisplay = true
+                guard let self else { return }
+                (self.textView.enclosingScrollView?.verticalRulerView as? LineNumberRulerView)?.needsDisplay = true
             })
             .disposed(by: disposeBag)
+        
+        searchField.rx.text.orEmpty.distinctUntilChanged().debounce(.milliseconds(300), scheduler: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] searchText in
+                guard let self else { return }
+                if searchText.isEmpty {
+                    self.listViewModel.fetchAll()
+                } else {
+                    self.listViewModel.searchDocuments(with: searchText)
+                }
+            }).disposed(by: disposeBag)
+        
+        listViewModel.documents.observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                guard let self else { return }
+                self.tableView.reloadData()
+            }).disposed(by: disposeBag)
     }
     
     override func viewDidAppear() {
@@ -156,6 +212,10 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
                 print("Error saving file: \(error)")
             }
         }
+    }
+    
+    @objc func newDocument(_ sender: Any) {
+        listViewModel.addDocument(title: "new", content: "")
     }
     
     @objc func themeChanged(_ sender: NSPopUpButton) {
@@ -202,7 +262,84 @@ extension ViewController: MarkDownEditTextViewDelegate {
         viewModel.markDownText.accept(text)
     }
 }
+
+extension ViewController: NSTableViewDelegate {
+    func tableViewSelectionDidChange(_ notification: Notification) {
+        let selectedRow = tableView.selectedRow
+        guard selectedRow >= 0 && selectedRow < listViewModel.documents.value.count else { return }
+        let doc = listViewModel.documents.value[selectedRow]
+        selectedDocument = doc
+        textView.string = doc.content
+        viewModel.markDownText.accept(doc.content)
+    }
+}
+
+extension ViewController: NSTableViewDataSource {
+    func numberOfRows(in tableView: NSTableView) -> Int {
+        return listViewModel.documents.value.count
+    }
     
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+        let doc = listViewModel.documents.value[row]
+        let identifier = NSUserInterfaceItemIdentifier("TitleColumn")
+
+        let cell = NSTableCellView()
+        let textField = NSTextField(string: doc.title)
+        textField.isEditable = true
+        textField.isBordered = false
+        textField.backgroundColor = .clear
+        textField.delegate = self
+        textField.tag = row // 編集時に参照用
+
+        cell.identifier = identifier
+        cell.textField = textField
+        cell.addSubview(textField)
+
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            textField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 8),
+            textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -8),
+            textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor)
+        ])
+        
+        return cell
+    }
+}
+
+extension ViewController: DocumentListTableViewDeletionDelegate {
+    
+    func documentListTableView(_ tableView: DocumentListTableView, didDeleteDocumentAt indexPath: IndexPath) {
+        let row = indexPath.item
+        guard row >= 0, row < listViewModel.documents.value.count else { return }
+
+        let doc = listViewModel.documents.value[row]
+
+        let alert = NSAlert()
+        alert.messageText = "本当に削除しますか？"
+        alert.informativeText = "「\(doc.title)」を削除します。"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "削除")
+        alert.addButton(withTitle: "キャンセル")
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            listViewModel.deleteDocument(doc)
+        }
+    }
+}
+
+extension ViewController: NSTextFieldDelegate {
+    func controlTextDidEndEditing(_ obj: Notification) {
+        guard let field = obj.object as? NSTextField else { return }
+        let row = field.tag
+        guard row >= 0, row < listViewModel.documents.value.count else { return }
+
+        let doc = listViewModel.documents.value[row]
+        let newTitle = field.stringValue
+
+        listViewModel.updateDocumentTitle(document: doc, newTitle: newTitle)
+    }
+}
+        
 extension NSToolbarItem.Identifier {
     static let themeSelector = NSToolbarItem.Identifier("ThemeSelector")
 }
