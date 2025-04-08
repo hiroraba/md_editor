@@ -2,8 +2,9 @@
 //  LineNumberRulerView.swift
 //  md_editor
 //
-//  Created by 松尾宏規 on 2025/04/07.
+//  Created by matsuohiroki on 2025/04/07.
 //
+
 import AppKit
 
 class LineNumberRulerView: NSRulerView {
@@ -31,10 +32,10 @@ class LineNumberRulerView: NSRulerView {
         if let textView = self.clientView as? NSTextView {
             if let layoutManager = textView.layoutManager {
                 
-                let relativePoint = self.convert(NSZeroPoint, from: textView)
-                let lineNumberAttributes = [NSAttributedString.Key.font: textView.font!, NSAttributedString.Key.foregroundColor: NSColor.gray] as [NSAttributedString.Key : Any]
+                let relativePoint = self.convert(NSPoint.zero, from: textView)
+                let lineNumberAttributes = [NSAttributedString.Key.font: textView.font!, NSAttributedString.Key.foregroundColor: NSColor.gray] as [NSAttributedString.Key: Any]
                 
-                let drawLineNumber = { (lineNumberString:String, ypoint:CGFloat) -> Void in
+                let drawLineNumber = { (lineNumberString: String, ypoint: CGFloat) in
                     let attString = NSAttributedString(string: lineNumberString, attributes: lineNumberAttributes)
                     let xpoint = 35 - attString.size().width
                     attString.draw(at: NSPoint(x: xpoint, y: relativePoint.y + ypoint))
@@ -46,7 +47,7 @@ class LineNumberRulerView: NSRulerView {
                 // swiftlint:disable:next force_try
                 let newLineRegex = try! NSRegularExpression(pattern: "\n", options: [])
                 // The line number for the first visible line
-                var lineNumber = newLineRegex.numberOfMatches(in: textView.string, options: [], range: NSMakeRange(0, firstVisibleGlyphCharacterIndex)) + 1
+                var lineNumber = newLineRegex.numberOfMatches(in: textView.string, options: [], range: NSRange(location: 0, length: firstVisibleGlyphCharacterIndex)) + 1
                 
                 var glyphIndexForStringLine = visibleGlyphRange.location
                 
@@ -55,18 +56,18 @@ class LineNumberRulerView: NSRulerView {
                     
                     // Range of current line in the string.
                     let characterRangeForStringLine = (textView.string as NSString).lineRange(
-                        for: NSMakeRange( layoutManager.characterIndexForGlyph(at: glyphIndexForStringLine), 0 )
+                        for: NSRange(location: layoutManager.characterIndexForGlyph(at: glyphIndexForStringLine), length: 0 )
                     )
                     let glyphRangeForStringLine = layoutManager.glyphRange(forCharacterRange: characterRangeForStringLine, actualCharacterRange: nil)
                     
                     var glyphIndexForGlyphLine = glyphIndexForStringLine
                     var glyphLineCount = 0
                     
-                    while ( glyphIndexForGlyphLine < NSMaxRange(glyphRangeForStringLine) ) {
+                    while glyphIndexForGlyphLine < NSMaxRange(glyphRangeForStringLine) {
                         
                         // See if the current line in the string spread across
                         // several lines of glyphs
-                        var effectiveRange = NSMakeRange(0, 0)
+                        var effectiveRange = NSRange(location: 0, length: 0)
                         
                         // Range of current "line of glyphs". If a line is wrapped,
                         // then it will have more than one "line of glyphs"

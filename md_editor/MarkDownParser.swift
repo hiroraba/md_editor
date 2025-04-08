@@ -2,7 +2,7 @@
 //  MarkDownParser.swift
 //  md_editor
 //
-//  Created by 松尾宏規 on 2025/04/07.
+//  Created by matsuohiroki on 2025/04/07.
 //
 
 import Foundation

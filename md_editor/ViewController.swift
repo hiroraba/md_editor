@@ -2,7 +2,7 @@
 //  ViewController.swift
 //  md_editor
 //
-//  Created by 松尾宏規 on 2025/04/07.
+//  Created by matsuohiroki on 2025/04/07.
 //
 
 import Cocoa
@@ -12,7 +12,7 @@ import RxCocoa
 
 class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate {
     
-    private let textView = NSTextView()
+    private let textView = MarkDownEditTextView()
     private let webView = WKWebView()
     
     private let viewModel = EditorViewModel()
@@ -38,14 +38,24 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         textView.isEditable = true
         textView.isSelectable = true
         textView.isRichText = false
+        
         // swiftlint:disable:next line_length
         textView.textContainer?.containerSize = NSSize(width: leftScrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
         textView.textContainer?.widthTracksTextView = true
-        
+
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = 6  // Adjusted to match ruler spacing
         textView.defaultParagraphStyle = paragraphStyle
         textView.typingAttributes[.paragraphStyle] = paragraphStyle
+        
+        let appearance = NSApp.effectiveAppearance
+        let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+
+        textView.backgroundColor = isDark ? NSColor.textBackgroundColor : NSColor.white
+        textView.textColor = isDark ? NSColor.white : NSColor.textColor
+
+        textView.registerForDraggedTypes([.fileURL])
+        textView.markdownDelegate = self
         
         leftScrollView.documentView = textView
         
@@ -84,9 +94,23 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         }.bind(to: viewModel.markDownText)
             .disposed(by: disposeBag)
         
-        viewModel.htmlText.observe(on: MainScheduler.instance).subscribe(onNext: { [weak self] html in
-            self?.webView.loadHTMLString(html, baseURL: nil)
-        }).disposed(by: disposeBag)
+        viewModel.htmlText
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] html in
+                guard let self = self else { return }
+                self.webView.loadHTMLString(html, baseURL: nil)
+                self.webView.setValue(false, forKey: "drawsBackground") // make background transparent
+            })
+            .disposed(by: disposeBag)
+        
+        viewModel.theme
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] theme in
+                guard let self = self else { return }
+                self.textView.backgroundColor = NSColor(hex: theme.backgroundColorHexString)!
+                self.textView.textColor = NSColor(hex: theme.textColorHexString)
+            })
+            .disposed(by: disposeBag)
         
         NotificationCenter.default.rx
             .notification(NSText.didChangeNotification, object: textView)
@@ -173,6 +197,12 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
     }
 }
 
+extension ViewController: MarkDownEditTextViewDelegate {
+    func textView(_ textView: MarkDownEditTextView, didLoadMarkdown text: String) {
+        viewModel.markDownText.accept(text)
+    }
+}
+    
 extension NSToolbarItem.Identifier {
     static let themeSelector = NSToolbarItem.Identifier("ThemeSelector")
 }
