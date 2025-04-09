@@ -23,6 +23,10 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
     private let searchField = NSSearchField()
     private var selectedDocument: Document? = nil
     
+    private let titleLabel = NSTextField(labelWithString: "")
+    private let createdAtLabel = NSTextField(labelWithString: "")
+    private let updatedAtLabel = NSTextField(labelWithString: "")
+    
     override func loadView() {
         let splitView = NSSplitView()
         splitView.isVertical = true
@@ -130,6 +134,7 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         viewModel.markDownText.observe(on: MainScheduler.instance).subscribe(onNext: { [weak self] text in
             guard let self = self else { return }
             guard let selectedDocument = self.selectedDocument else { return }
+            updateToolbar(for: selectedDocument)
             listViewModel.updateDocumentContent(document: selectedDocument, newContent: text)
         }).disposed(by: disposeBag)
         
@@ -232,11 +237,11 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
     }
     
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return [.flexibleSpace, .themeSelector]
+        return [.metaInfo, .flexibleSpace, .themeSelector]
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return [.flexibleSpace, .themeSelector]
+        return [.metaInfo, .flexibleSpace, .themeSelector]
     }
     
     // swiftlint:disable:next line_length
@@ -246,14 +251,45 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
             popup.addItems(withTitles: ["System", "Light", "Dark"])
             popup.target = self
             popup.action = #selector(themeChanged(_:))
-            
+
             let item = NSToolbarItem(itemIdentifier: .themeSelector)
             item.view = popup
-            item.label = "Theme"
-            item.paletteLabel = "Theme"
             return item
         }
+
+        if itemIdentifier == .metaInfo {
+            titleLabel.font = NSFont.boldSystemFont(ofSize: 14)
+            titleLabel.textColor = .labelColor
+            [createdAtLabel, updatedAtLabel].forEach {
+                $0.font = NSFont.systemFont(ofSize: 12)
+                $0.textColor = .secondaryLabelColor
+            }
+
+            let stack = NSStackView(views: [titleLabel, createdAtLabel, updatedAtLabel])
+            stack.orientation = .horizontal
+            stack.spacing = 16
+            stack.alignment = .centerY
+
+            let item = NSToolbarItem(itemIdentifier: .metaInfo)
+            item.view = stack
+            return item
+        }
+
         return nil
+    }
+    
+    func updateToolbar(for document: Document) {
+        titleLabel.stringValue = "\(document.title)"
+        createdAtLabel.stringValue = "createdAt: \(format(date: document.createdAt))"
+        updatedAtLabel.stringValue = "lastModifiedAt: \(format(date: document.updatedAt))"
+    }
+
+    private func format(date: Date?) -> String {
+        guard let date else { return "-" }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 
@@ -342,4 +378,5 @@ extension ViewController: NSTextFieldDelegate {
         
 extension NSToolbarItem.Identifier {
     static let themeSelector = NSToolbarItem.Identifier("ThemeSelector")
+    static let metaInfo = NSToolbarItem.Identifier("MetaInfo")
 }
