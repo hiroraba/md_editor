@@ -1,0 +1,14 @@
+{
+  "name": "search_markdown",
+  "description": "保存されたMarkdownドキュメントの中から、自然言語によるキーワード検索を行います。タイトルや本文の一部にマッチするものを最大5件返します。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "q": {
+        "type": "string",
+        "description": "検索したいキーワードやフレーズ（例：会議メモ、ミーティング、予定）"
+      }
+    },
+    "required": ["q"]
+  }
+}
