@@ -61,6 +61,11 @@ final class MarkdownDocumentListViewModel {
         // swiftlint:disable:next force_try
         try! realm.write {
             document.content = newContent
+            document.updatedAt = Date()
+            
+            if let firstLine  = newContent.split(separator: "\n").first, !firstLine.trimmingCharacters(in: .whitespaces).isEmpty {
+                document.title = firstLine.replacingOccurrences(of: "#", with: "").replacingOccurrences(of: " ", with: "")
+            }
         }
     }
 }

@@ -13,4 +13,5 @@ final class Document: Object, Identifiable {
     @Persisted var title: String
     @Persisted var content: String
     @Persisted var createdAt: Date
+    @Persisted var updatedAt: Date?
 }
