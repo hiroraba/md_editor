@@ -10,7 +10,12 @@ import Cocoa
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-    func applicationDidFinishLaunching(_ aNotification: Notification) {}
+    func applicationDidFinishLaunching(_ aNotification: Notification) {
+        let nioServer = NioSearchServer()
+        DispatchQueue.global().async {
+            try? nioServer.start()
+        }
+    }
 
     func applicationWillTerminate(_ aNotification: Notification) {}
 
