@@ -22,7 +22,15 @@ final class EditorViewModel {
         let currentTheme = theme.asObservable()
         self.htmlText = Observable.combineLatest(text, currentTheme)
             .map { text, theme in
-                MarkDownParser().convertToHTML(markdown: text, theme: theme)
+               var html = MarkDownParser().convertToHTML(markdown: text, theme: theme)
+                
+                html = html.replacingOccurrences(
+                    of: "<h(\\d)>(.*?)</h\\1>",
+                    with: "<h$1 id=\"$2\">$2</h$1>",
+                    options: .regularExpression
+                )
+                
+                return html
             }
     }
 }
