@@ -27,6 +27,8 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
     private let createdAtLabel = NSTextField(labelWithString: "")
     private let updatedAtLabel = NSTextField(labelWithString: "")
     
+    private let outlineView = OutlineView()
+    
     override func loadView() {
         let splitView = NSSplitView()
         splitView.isVertical = true
@@ -113,6 +115,12 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         
         splitView.insertArrangedSubview(sideBarStack, at: 0)
         
+        let outlineScrollView = outlineView
+        outlineScrollView.translatesAutoresizingMaskIntoConstraints = false
+        outlineScrollView.widthAnchor.constraint(equalToConstant: 200).isActive = true
+
+        splitView.insertArrangedSubview(outlineScrollView, at: 1)
+        
         self.view = splitView
     }
     
@@ -132,16 +140,18 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
             .disposed(by: disposeBag)
         
         viewModel.markDownText.observe(on: MainScheduler.instance).subscribe(onNext: { [weak self] text in
-            guard let self = self else { return }
+            guard let self else { return }
             guard let selectedDocument = self.selectedDocument else { return }
             updateToolbar(for: selectedDocument)
             listViewModel.updateDocumentContent(document: selectedDocument, newContent: text)
+            let outlineItems = self.extractOutlineItems(from: text)
+            self.outlineView.updateOutline(with: outlineItems)
         }).disposed(by: disposeBag)
         
         viewModel.htmlText
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] html in
-                guard let self = self else { return }
+                guard let self else { return }
                 self.webView.loadHTMLString(html, baseURL: nil)
                 self.webView.setValue(false, forKey: "drawsBackground") // make background transparent
             })
@@ -150,7 +160,7 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         viewModel.theme
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] theme in
-                guard let self = self else { return }
+                guard let self else { return }
                 self.textView.backgroundColor = NSColor(hex: theme.backgroundColorHexString)!
                 self.textView.textColor = NSColor(hex: theme.textColorHexString)
             })
@@ -179,6 +189,21 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
                 guard let self else { return }
                 self.tableView.reloadData()
             }).disposed(by: disposeBag)
+        
+        outlineView.onSelect = { [weak self] item in
+            guard let self else { return }
+            if let textView = self.textView as NSTextView? {
+                textView.scrollRangeToVisible(item.range)
+                textView.setSelectedRange(item.range)
+            }
+            
+            let js = """
+            var el = document.getElementById('\(item.title)');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            """
+
+            self.webView.evaluateJavaScript(js, completionHandler: nil)
+        }
     }
     
     override func viewDidAppear() {
@@ -291,6 +316,28 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+    
+    func extractOutlineItems(from markDown: String) -> [OutlineItem] {
+        let lines = markDown.components(separatedBy: .newlines)
+        var outlineItems: [OutlineItem] = []
+        
+        var location = 0
+        for line in lines {
+            let range = NSRange(location: location, length: (line as NSString).length)
+            location += range.length + 1 // +1 for newline
+            
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix("#") else { continue }
+            
+            let level = trimmed.prefix { $0 == "#" }.count
+            let title = trimmed.drop(while: { $0 == "#" }).trimmingCharacters(in: .whitespaces)
+            
+            outlineItems.append(OutlineItem(title: title, level: level, range: range))
+        }
+        
+        return outlineItems
+    }
+            
 }
 
 extension ViewController: MarkDownEditTextViewDelegate {
