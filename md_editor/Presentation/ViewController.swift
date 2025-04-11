@@ -18,7 +18,7 @@ class ViewController: NSViewController, WKNavigationDelegate, NSToolbarDelegate 
     private let viewModel = EditorViewModel()
     private let disposeBag = DisposeBag()
     
-    private let listViewModel = MarkdownDocumentListViewModel()
+    private let listViewModel = DocumentListViewModel()
     private let tableView = DocumentListTableView()
     private let searchField = NSSearchField()
     private var selectedDocument: Document? = nil
