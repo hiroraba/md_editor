@@ -30,7 +30,10 @@ final class OutlineView: NSScrollView {
         tableView.headerView = nil
         tableView.delegate = self
         tableView.dataSource = self
-        tableView.usesAlternatingRowBackgroundColors = true
+        
+        tableView.gridStyleMask = []
+        tableView.intercellSpacing = NSSize(width: 0, height: 4)
+        tableView.usesAlternatingRowBackgroundColors = false
     }
     
     func updateOutline(with items: [OutlineItem]) {
@@ -47,6 +50,10 @@ extension OutlineView: NSTableViewDelegate, NSTableViewDataSource {
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let item = items[row]
         let cell = NSTableCellView()
+        cell.wantsLayer = true
+        cell.layer?.backgroundColor = (row == tableView.selectedRow)
+            ? NSColor.controlAccentColor.withAlphaComponent(0.1).cgColor
+            : NSColor.clear.cgColor
         let textField = NSTextField(labelWithString: item.title)
         textField.font = NSFont.systemFont(ofSize: CGFloat(14 - item.level))
         textField.textColor = .labelColor
