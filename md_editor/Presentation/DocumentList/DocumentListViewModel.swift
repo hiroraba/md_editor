@@ -1,5 +1,5 @@
 //
-//  MarkdownDocumentListViewModel.swift
+//  DocumentListViewModel.swift
 //  md_editor
 //
 //  Created by 松尾宏規 on 2025/04/08.
@@ -10,7 +10,7 @@ import RxSwift
 import RxCocoa
 import Foundation
 
-final class MarkdownDocumentListViewModel {
+final class DocumentListViewModel {
     // swiftlint:disable:next force_try
     private let realm: Realm = try! Realm()
     let documents = BehaviorRelay<[Document]>(value: [])
