@@ -5,67 +5,61 @@
 //  Created by 松尾宏規 on 2025/04/08.
 //
 
-import RealmSwift
-import RxSwift
-import RxCocoa
 import Foundation
+import RxSwift
+import RxRelay
 
 final class DocumentListViewModel {
-    // swiftlint:disable:next force_try
-    private let realm: Realm = try! Realm()
-    let documents = BehaviorRelay<[Document]>(value: [])
+    private let fetchDocumentsUseCase: FetchDocumentsUseCase
+    private let searchDocumentsUseCase: SearchDocumentsUseCase
+    private let addDocumentUseCase: AddDocumentUseCase
+    private let deleteDocumentUseCase: DeleteDocumentUseCase
+    private let updateDocumentTitleUseCase: UpdateDocumentTitleUseCase
+    private let updateDocumentContentUseCase: UpdateDocumentContentUseCase
     
-    init() {
+    let documents = BehaviorRelay<[Document]>(value: [])
+    private let disposeBag = DisposeBag()
+    
+    init(fetchDocumentsUseCase: FetchDocumentsUseCase = FetchDocumentsUseCase(),
+         searchDocumentsUseCase: SearchDocumentsUseCase = SearchDocumentsUseCase(),
+         addDocumentUseCase: AddDocumentUseCase = AddDocumentUseCase(),
+         deleteDocumentUseCase: DeleteDocumentUseCase = DeleteDocumentUseCase(),
+         updateDocumentTitleUseCase: UpdateDocumentTitleUseCase = UpdateDocumentTitleUseCase(),
+         updateDocumentContentUseCase: UpdateDocumentContentUseCase = UpdateDocumentContentUseCase()) {
+        self.fetchDocumentsUseCase = fetchDocumentsUseCase
+        self.searchDocumentsUseCase = searchDocumentsUseCase
+        self.addDocumentUseCase = addDocumentUseCase
+        self.deleteDocumentUseCase = deleteDocumentUseCase
+        self.updateDocumentTitleUseCase = updateDocumentTitleUseCase
+        self.updateDocumentContentUseCase = updateDocumentContentUseCase
+        
         fetchAll()
     }
     
     func fetchAll() {
-        let results = realm.objects(Document.self).sorted(byKeyPath: "createdAt", ascending: false)
-        documents.accept(Array(results))
+        documents.accept(fetchDocumentsUseCase.execute())
     }
     
     func searchDocuments(with keyword: String) {
-        let results = realm.objects(Document.self).filter("title CONTAINS[c] %@", keyword).sorted(byKeyPath: "createdAt", ascending: false)
-        documents.accept(Array(results))
+        documents.accept(searchDocumentsUseCase.execute(keyword: keyword))
     }
     
     func addDocument(title: String, content: String) {
-        let document = Document()
-        document.title = title
-        document.content = content
-        document.createdAt = Date()
-        // swiftlint:disable:next force_try
-        try! realm.write {
-            realm.add(document)
-        }
+        addDocumentUseCase.execute(title: title, content: content)
         fetchAll()
     }
     
     func deleteDocument(_ document: Document) {
-        // swiftlint:disable:next force_try
-        try! realm.write {
-            realm.delete(document)
-        }
+        deleteDocumentUseCase.execute(document: document)
         fetchAll()
     }
     
     func updateDocumentTitle(document: Document, newTitle: String) {
-        // swiftlint:disable:next force_try
-        try! realm.write {
-            document.title = newTitle
-        }
+        updateDocumentTitleUseCase.execute(document: document, newTitle: newTitle)
         fetchAll()
     }
     
     func updateDocumentContent(document: Document, newContent: String) {
-        // swiftlint:disable:next force_try
-        try! realm.write {
-            document.content = newContent
-            document.updatedAt = Date()
-            
-            if let firstLine  = newContent.split(separator: "\n").first, !firstLine.trimmingCharacters(in: .whitespaces).isEmpty {
-                document.title = firstLine.replacingOccurrences(of: "#", with: "").replacingOccurrences(of: " ", with: "")
-            }
-        }
+        updateDocumentContentUseCase.execute(document: document, newContent: newContent)
     }
 }
